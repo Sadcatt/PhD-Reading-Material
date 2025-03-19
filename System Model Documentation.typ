@@ -1,5 +1,5 @@
 #import "@preview/fletcher:0.5.6" as fletcher: diagram, node, edge
-
+#set text(font: "Calibri")
 /*#set text(
   font:"Verdana"
   )
@@ -7,6 +7,9 @@
 #set par(
   justify: true
   )
+  #set page(
+    margin:(top: 1.5cm, bottom: 1.5cm, left: 1.5cm, right: 1.5cm)
+    )
 #set heading(
   numbering: "1."
   )
@@ -25,7 +28,7 @@
 
 #pagebreak()
 #outline(depth:2,indent:6pt)
-
+#set text(size:11pt)
 
 #pagebreak()
 = Introduction
@@ -61,40 +64,75 @@ Once the thermokinetic state at Node 2 is calculated, the mass flow rate is comp
 
 === Balance Equation Solver
 This model is utilised when no change of cross sectional area occurs. The model is based on the conservation of mass, momentum, and energy. The model is a one-dimensional model, and is based on the following equations:
-\ \
+
 $ #sym.rho _1 u_1 - #sym.Delta G = #sym.rho _2 u_2 $ <mass_balance>
+$ P_1 + #sym.rho _1 u^2 _1 -#sym.Delta I = P_2 + #sym.rho _2 u^2 _2 $ <momentum_balance>
+$ G_1/G_2 (h_1 + u_1^2/2 - #sym.Delta H) = h_2 + u^2_2/2 $
+
+Balance equation solver has different sub-forms depending on the type of block that is being modelled. The form described above is the general form.
 
 
-
-
+==== Mass Balance
 @mass_balance can be derived from the conservation of mass, where $#sym.rho$ is the density, $u$ is the velocity, $A$ is the duct cross-sectional area, and $G$ is the mass flow rate. 
 #figure(
   diagram(
   node-stroke: (thickness: 1pt, dash: "dashed",),
-  node((2,0), [$c o n t r o l ()/() v o l u m e (c v)$],height: 3cm, width: 5cm, outset:0pt),
-  edge((0,0), (2,0), "->", $dot(m)_1, u_1, #sym.rho _1$ ),
-  edge((2,0), (4,0), "->", $dot(m)_2, u_2, #sym.rho _2$ ),
+  node((2,0), [$"control volume(cv)"$],height: 3cm, width: 5cm, outset:0pt),
+  edge((0,0), (2,0), "->", $ #sym.Delta G_1, u_1, #sym.rho _1$ ),
+  edge((2,0), (4,0), "->", $#sym.Delta G_2, u_2, #sym.rho _2$ ),
   edge((1.42,-0.50),(1.42,0.50), "<->",),
   node((1.68,0.3),$A_1 = A_2$,stroke:none)
   )
 )
-\
+
 For a system where the condition of continuity is met: \
-$ dot(m) _1 = dot(m) _2 $
+$ #sym.Delta G_1 = #sym.Delta G_2 $ <continuity>
+
+However, in the case where fluid is injected into the flow between nodes 1 and 2, like in the case of the injector block, mass flux entering the block at node 1 is unequal to mass flux exiting the block at node 2 and hence continuity condition is not met. Ammended @discontinuity is shown below:
+$ #sym.Delta G_1 + #sym.Delta G_"additional" = #sym.Delta G_2  $ <discontinuity>
+Mass flux through a cross section is determined as follows:
+$ #sym.Delta G = #sym.rho u A $ <mass_flux>
+Subsituting in @mass_flux into @discontinuity, we can cancel the area terms, due to constant cross sectional area, and therefore derive @mass_balance.
+
+==== Momentum Balance
+@momentum_balance can be derived from the conservation of momentum, where $P$ is the pressure, $I$ is the specific kinetic energy, and $H$ is the specific enthalpy.
+
+==== Energy Balance
+
 
 = Blocks included in HyPro
-== Inlet
+== Irrelevant Section But Documented for Completeness
+=== Inlet
 The inlet model is responsible for the handling of the air that is coming into the system. This part is not applicable for the use in rocketry systems, but is included in my documentation for the sake of completeness.
 \ \
 The inlet utilises two types of models, variable geometry convergent-divergent (C-D) intake ramps, and variable centre body intakes.
-=== C-D Ramp
+==== C-D Ramp
 Ideal intake that converts supersonic free stream into a subsonic flow isentropically. This idealistic system is hard to impliment in practice however and would form inconvenient shocks in reality. #image("supersonic_inlet_with_mobile_panel_Tudosie.png")
-=== Centre body
+==== Centre body
 The centre body intake differs from the C-D ramp in that rather than slowing the air at the throat of a nozzle, it is slowed using a set of shocks, which initially form at the front of the intake.
-== Fan/compressor
+=== Fan/compressor
 A simple model for fans and compressors is provided in HyPro. The model takes the total pressure ratio as input, and considers compression to be isentropic.
-== Mixer
-== Injector
-
-== Combustor
-== Nozzle
+=== Mixer
+The mixer model enables two flows to be combined. This model was originally designed for use in combined cycle engines where there is a primary and secondary flow which needed to be merged, this however is not applicable for use in rocket engines and also shall not be further covered in my documentation.
+== Importanter Section
+=== Injector
+Injection is considered separately from other blocks like combustors and mixers in HyPro in order to support any kind of flowpath. There are a number of scenarios that require different factors to be accounted for. These include injection in an airbreating enginer flow, as well as fuel and oxidiser flow injected into a rocket combustion chamber. For both of these models, if a module downstream chokes, the mass flow rate is reduced
+==== Airbreathing Engine Flow
+Airbreating fuel injection has two types of modelling, these include a simple pressure change, as well as a custom balance equation solver which applies to the flow at the injector.
+===== Simple Assumption
+The simpler model assumes that pressure is increased at node 2 of the model following @injector_air_simple:
+$ P_2 = P_1 / (1-X_"fuel") $ <injector_air_simple>
+Where $X_"fuel"$ is the molar fraction of fuel in the flow.
+===== More Complex Assumption
+The more complex model is based on the balance equation solver, which is described in the gas dynamics section. This model assumes that the momentum of the injected fuel is negligable compared to the main flow. The user must also set an equivalence ratio $#sym.phi$, which is the ratio of the actual fuel to oxidiser ratio to the stoichiometric ratio, as well as fuel temperature, $T_"inj"$.
+$ #sym.Delta G = -(#sym.phi #sym.Phi)W_f/W_1 (X_"ox") #sym.rho _1 u_1 $
+$ #sym.Delta I = 0 $
+$ #sym.Delta H = #sym.Delta G h_f $
+==== Rocket Motor Flow
+Rocket motor flow is the other type of scenario modelled in HyPro, where fuel is injected into the combustion chamber. There are two models included in the HyPro code base which deal with this injection, however they each find different variables of the same set of equiations:
+$ P_2 = #sym.rho _2 R T_2 $
+$ "where" #sym.rho _2 = dot(m)/(M_2 a_2 A_2) $
+The alternative module, $"InjectionPlatePressure"$ is the alternative version of the module which instead of determining updated pressure, Mach number at node 2, $M_2$ is determined. For the case of the rocket motor flow, when $M_"throat" = 1$, flow upstream is choked, and mass flow rate is limited / reduced.
+=== Combustor
+The combustor has been routinely described by the previous guys as being a "ballache". GitHub co-pilot is also being a massive pain because it keeps trying to autocomplete my sentences and gets it totally wrong in most cases. It also gets it wrong most of the time. 
+=== Nozzle
