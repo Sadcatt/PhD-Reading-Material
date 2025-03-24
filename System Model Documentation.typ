@@ -144,7 +144,7 @@ $ #sym.Delta H = #sym.Delta G h_f $
 Rocket motor flow is the other type of scenario modelled in HyPro, where fuel is injected into the combustion chamber. There are two models included in the HyPro code base which deal with this injection, however they each find different variables of the same set of equiations:
 $ P_2 = #sym.rho _2 R T_2 $
 $ "where" #sym.rho _2 = dot(m)/(M_2 a_2 A_2) $
-The alternative module, $"InjectionPlatePressure"$ is the alternative version of the module which instead of determining updated pressure, Mach number at node 2, $M_2$ is determined. For the case of the rocket motor flow, when $M_"throat" = 1$, flow upstream is choked, and mass flow rate is limited / reduced.
+The alternative module, $"InjectionPlatePressure"$ is the alternative version of the module which instead of determining updated pressure, Mach number at node 2, $M_2$ is determined. For the case of the rocket motor flow, when $M_"throat" = 1$, flow upstream is choked, and mass flow rate is limited / reduced. Mass flow rate, $dot(m)$, accounts for the flow of both fuel and oxidiser. 
 
 === Combustor
 The combustor has been routinely described by the previous guys as being a "ballache". It is difficult to model due to "the complexity fo the phenomena that occur within them.", and easy assuptions we rely on like ideal gas cannot be employed due to the high temperature present. The effects of mixing as well as finite rate chemical reactions require accounting.
@@ -154,7 +154,8 @@ This method is a simple Nat-5 style chemistry equation, which finds the overall 
 
 === Nozzle
 #pagebreak()
-= Flowchart of Rocket Propulsion
+= System Model Diagram
+== Rocket Propulsion
 Using the blocks listed above, rocket propulsion is modelled in @liq_biprop using the following structure:
 #import fletcher.shapes: diamond
 
